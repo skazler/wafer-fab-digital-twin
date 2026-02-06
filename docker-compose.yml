@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # The Memory: InfluxDB for time-series sensor data
+  db:
+    image: influxdb:2.7
+    container_name: greenfield_db
+    restart: always
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password123
+      - DOCKER_INFLUXDB_INIT_ORG=greenfield_inc
+      - DOCKER_INFLUXDB_INIT_BUCKET=wafer_telemetry
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-admin-token-123
+    networks:
+      - greenfield_net
+
+  # The Nervous System: FastAPI logic and Safety Interlocks
+  backend:
+    build: ./backend
+    container_name: greenfield_api
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - INFLUXDB_URL=http://db:8086
+      - INFLUXDB_TOKEN=password123
+      - INFLUXDB_ORG=greenfield_inc
+      - INFLUXDB_BUCKET=wafer_telemetry
+      - INFLUXDB_TOKEN=my-super-secret-admin-token-123
+    networks:
+      - greenfield_net
+
+  # The Machine: Python Simulator generating stochastic wafer data
+  sim:
+    build: ./sim
+    container_name: greenfield_sim
+    depends_on:
+      - backend
+    environment:
+      - API_URL=http://backend:8000/telemetry
+    networks:
+      - greenfield_net
+
+networks:
+  greenfield_net:
+    driver: bridge
