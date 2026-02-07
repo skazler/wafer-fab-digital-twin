@@ -31,9 +31,7 @@ dist/
 
 # --- Docker & Databases ---
 .docker/
-# Ignore the actual database files if stored locally
 influxdb_data/
-# Ignore sensitive environment files
 docker-compose.override.yml
 *.env
 
