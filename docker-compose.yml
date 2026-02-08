@@ -1,8 +1,17 @@
-version: '3.8'
-
 services:
-  # The Memory: InfluxDB for time-series sensor data
-  db:
+  postgres_db:
+    image: postgres:15
+    container_name: greenfield_sql
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password123
+      - POSTGRES_DB=fab_metadata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - greenfield_net
+
+  influx_db:
     image: influxdb:2.7
     container_name: greenfield_db
     restart: always
@@ -17,35 +26,46 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-admin-token-123
     networks:
       - greenfield_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  # The Nervous System: FastAPI logic and Safety Interlocks
   backend:
     build: ./backend
     container_name: greenfield_api
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      influx_db:  # MATCH the service name above
+        condition: service_healthy
+      postgres_db: # Also wait for Postgres
+        condition: service_started
     environment:
-      - INFLUXDB_URL=http://db:8086
-      - INFLUXDB_TOKEN=password123
+      - INFLUXDB_URL=http://influx_db:8086 # MATCH the service name
+      - INFLUXDB_TOKEN=my-super-secret-admin-token-123
       - INFLUXDB_ORG=greenfield_inc
       - INFLUXDB_BUCKET=wafer_telemetry
-      - INFLUXDB_TOKEN=my-super-secret-admin-token-123
+      # Add the SQL connection string for SQLAlchemy
+      - DATABASE_URL=postgresql://admin:password123@postgres_db:5432/fab_metadata
     networks:
       - greenfield_net
 
-  # The Machine: Python Simulator generating stochastic wafer data
   sim:
     build: ./sim
     container_name: greenfield_sim
     depends_on:
       - backend
     environment:
-      - API_URL=http://backend:8000/telemetry
+      - API_URL=http://backend:8000/api/v1/telemetry
     networks:
       - greenfield_net
 
 networks:
   greenfield_net:
     driver: bridge
+
+volumes:
+  postgres_data:
+  influxdb_data:

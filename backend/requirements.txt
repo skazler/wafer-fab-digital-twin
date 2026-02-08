@@ -1,5 +1,9 @@
 fastapi
-uvicorn
-pydantic
 influxdb-client
+polars
+psycopg2-binary
+pydantic
+pydantic-settings
 python-dotenv
+sqlalchemy
+uvicorn
