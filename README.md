@@ -1,45 +1,75 @@
 # Project Greenfield: Industrial Digital Twin
 
-## Summary
-This project is a full-stack Digital Twin architecture designed to simulate, monitor, and control semiconductor manufacturing processes in real-time. Named **"Greenfield"** to reflect the nature of new facility development in Texas, the system demonstrates the intersection of software engineering and industrial safety protocols.
+## 🏗️ Overview
+This repository contains a **Digital Twin Prototype** designed to model a wafer lifecycle in a semiconductor manufacturing environment.
 
-## Technical Architecture
-- **Physical Layer (Simulator):** A Python-based stochastic engine modeling tool degradation and sensor drift in a plasma etching environment.
-- **Nervous System (Backend):** A FastAPI microservice implementing **Safety Interlocks** and data validation.
-- **Memory (Database):** InfluxDB time-series storage for millisecond-precision audit trails.
-- **Control Room (Frontend):** A React dashboard featuring real-time telemetry visualization and automated event logging.
+## 🛡️ IP & Security Disclaimer
+**This project is a generic architectural demonstration and does not contain proprietary information.**
+* **Data Integrity:** All telemetry data is synthetically generated using stochastic models and does not reflect real-world manufacturing recipes, setpoints, or proprietary process signatures.
+* **Architectural Neutrality:** The system design utilizes industry-standard open-source tools (FastAPI, InfluxDB, Postgres) common in IIoT environments.
+* **Compliance Awareness:** No proprietary schemas, hardware configurations, or corporate-specific logic from any manufacturer are utilized in this codebase. This project serves as a "Black Box" architectural proof-of-concept.
 
-## Core Features
-- **Autonomous Interlock System:** The backend monitors "drift" parameters and issues a remote shutdown command (Command & Control) to the physical tool if thermal thresholds are breached.
-- **Microservice Orchestration:** Fully containerized using **Docker Compose** to simulate a distributed factory network.
-- **Data Integrity:** Implements Pydantic modeling to ensure "Zero-Defect" data entry into the system history.
+
+## 🧩 System Components
+* **The Physical Layer (Simulator):** A Python-based stochastic data generator simulating an Etch tool process flow with randomized process noise.
+* **The Nervous System (Backend):** An asynchronous Python hub managing data validation, safety logic, and cross-database orchestration.
+* **The Memory (InfluxDB):** A time-series engine optimized for high-frequency "firehose" data (temperature, pressure, etc).
+* **The Audit Trail (PostgreSQL):** A relational store for persistent "Safety Interlocks" and "Lot Quarantine" event logging.
+* **The Control Room (Frontend):** A React dashboard featuring real-time telemetry visualization and automated event logging.
+
+### 🛠️ Tech Stack
+| Layer | Technology |
+| :--- | :--- |
+| **API Framework** | FastAPI (Python 3.11) |
+| **Time-Series DB** | InfluxDB 2.7 (Flux) |
+| **Relational DB** | PostgreSQL 15 |
+| **ORM** | SQLAlchemy / Pydantic |
+| **Analysis** | Polars / NumPy |
+| **Deployment** | Docker & Docker Compose |
+
+## 🚀 Key Technical Features
+* **Automated Safety Interlock:** Real-time logic detects process excursions (e.g., Temperature > 188.0°C) and automatically triggers a "Machine Stop" event.
+* **Relational Event Logging:** All safety violations are persisted to PostgreSQL with a `QuarantineLog` entry, ensuring a permanent audit trail for fab engineers.
+* **Time-Series Analytics:** Sensor data is streamed to InfluxDB, allowing for millisecond-resolution historical trending and analysis.
+* **SPC Integration:** Leverages a custom service to calculate Statistical Process Control metrics (Mean, Sigma, Control Limits) to detect process drift before failure.
+* **Containerized Orchestration:** Fully Dockerized environment to ensure seamless deployment and environment parity between development and production.
 
 ## 🛠 Standard Operational Procedures
 
 To deploy the Digital Twin environment, follow these steps in order. Ensure you have **Docker Desktop** running before starting.
 
-### Deployment & Operations SOP
+## 🚦 Getting Started
 
-```bash
-# 1. Zero-State Reset
-# Clear stale containers and wipe database volumes
-docker compose down -v
+### Prerequisites
+* Docker and Docker Compose installed.
 
-# 2. Tactical Launch
-# TERMINAL 1: Build and start Infrastructure (Backend, DB, Simulator)
-docker compose up --build
+### Installation
+1.  **Clone the Repository:**
+    ```bash
+    git clone [https://github.com/skazler/wafer-fab-digital-twin.git](https://github.com/skazler/wafer-fab-digital-twin.git)
+    cd wafer-fab-digital-fab
+    ```
+2.  **Launch the System:**
+    ```bash
+    # 1. Zero-State Reset
+    # Clear stale containers and wipe database volumes
+    docker compose down -v
 
-# TERMINAL 2: Launch Control Room (Frontend Dashboard)
-cd frontend
-npm start
+    # 2. Tactical Launch
+    # TERMINAL 1: Build and start Infrastructure (Backend, DB, Simulator)
+    docker compose up --build
 
-# 3. Mission Surveillance
-# View HUD (Dashboard):     http://localhost:3000
-# View API Telemetry:       http://localhost:8000/docs
-# View Data Vault (DB):     http://localhost:8086
-```
+    # TERMINAL 2: Launch Control Room (Frontend Dashboard)
+    cd frontend
+    npm start
+    ```
+3.  **Access Points:**
+    * **Interactive API Documentation:** `http://localhost:8000/docs`
+    * **InfluxDB Dashboard:** `http://localhost:8086` (Default: `admin`/`password123`)
+    * **View HUD (Dashboard):** `http://localhost:3000`
+    * **View API Telemetry:** `http://localhost:8000/docs`
 
-### Current Progress Images
+## Current Progress Images
 TBD.
 
 ## Future Steps
@@ -48,7 +78,6 @@ TBD.
   - Why: to understand the business metrics of a fab and explain why a tool’s OEE dropped (e.g. "the digital twin showed a spike in down time which impacted availability").
 
 - **SPC (Statistical Process Control) Integration:** detect if a process is drifting before it ruins wafers.
-  - A backend service that runs Western Electric Rules (or simple thresholding) on the simulated sensor data (temperature, pressure, etc).
   - A "Control Chart" component (using D3.js or Chart.js) that highlights points in red when they violate a rule and allows an engineer to "annotate" the deviation.
 
 - **"Digital Thread" Traceability (Data Lineage):** Semiconductors have a complex "lineage." One wafer goes through hundreds of tools. If a chip fails a month later, we need to trace it back.
