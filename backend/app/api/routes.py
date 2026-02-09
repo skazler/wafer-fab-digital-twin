@@ -21,7 +21,7 @@ router = APIRouter()
 async def receive_telemetry(
     data: TelemetryData, pg_db: Session = Depends(get_postgres_db)
 ):
-    temp = data.metrics.get("temperature", 0)
+    temp = data.metrics.get(MetricType.TEMPERATURE, 0)
     interlock_triggered = False
 
     if temp > 188.0:
@@ -29,9 +29,11 @@ async def receive_telemetry(
         interlock_triggered = True
 
     save_to_influx(data)
+
     print(
         f"Processed: {data.tool_id} | Wafer: {data.wafer_id} | Interlock: {interlock_triggered}"
     )
+
     return {
         "status": "processed",
         "wafer_id": data.wafer_id,
@@ -53,15 +55,17 @@ async def get_quarantine_logs(pg_db: Session = Depends(get_postgres_db)):
 @router.get("/telemetry/spc/{tool_id}")
 def get_tool_spc_data(tool_id: str):
     raw_history = get_influx_history(limit=100)
+
     tool_data = [
         {"time": h["time"], "value": h["value"]}
         for h in raw_history
-        if h["tool_id"] == tool_id and h["metric"] == "temperature"
+        if h["tool_id"] == tool_id and h["metric"] == MetricType.TEMPERATURE.value
     ]
 
     if not tool_data:
         raise HTTPException(
-            status_code=404, detail="No telemetry found for SPC calculation"
+            status_code=404,
+            detail=f"No {MetricType.TEMPERATURE} telemetry found for SPC",
         )
 
     analysis = SPCService.calculate_spc_metrics(tool_data)
@@ -100,13 +104,13 @@ async def get_latest():
 
 
 def trigger_safety_interlock(data: TelemetryData, pg_db: Session):
-    temp = data.metrics.get("temperature", 0)
+    temp = data.metrics.get(MetricType.TEMPERATURE, 0)
     print(f"!!! SAFETY INTERLOCK TRIGGERED: Tool {data.tool_id} !!!")
 
     new_quarantine = QuarantineLog(
         wafer_id=data.wafer_id,
         tool_id=data.tool_id,
-        metric_name="Temperature",
+        metric_name=MetricType.TEMPERATURE.value,
         violation_value=temp,
         threshold_limit=188.0,
     )

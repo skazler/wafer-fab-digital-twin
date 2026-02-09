@@ -3,13 +3,18 @@ import { ref, onMounted } from 'vue';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Tag from 'primevue/tag';
-
 const logs = ref([]);
 
 const fetchLogs = async () => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
   const response = await fetch(`${baseUrl}/quarantine`);
-  logs.value = await response.json();
+
+  try {
+    const res = await fetch(`${baseUrl}/quarantine`);
+    if (res.ok) logs.value = await res.json();
+  } catch (err) {
+    console.error("Postgres Fetch Error:", err);
+  }
 };
 
 onMounted(() => {
