@@ -24,6 +24,7 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 | :--- | :--- | :--- |
 | **Frontend** | Vue 3 + PrimeVue 4 | HUD & Real-time Charts |
 | **API Framework** | FastAPI (Python 3.11) | Async logic |
+| **PdM Engine** | SciPy (Linear Regression) | Predictive drift analysis |
 | **Time-Series DB** | InfluxDB 2.7 (Flux) | Fast sensor telemetry |
 | **Relational DB** | PostgreSQL 15 | Persistent audit & state management |
 | **Containerization**| Docker & Docker Compose | Environment parity & orchestration |
@@ -89,14 +90,24 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 
 
 ## 🚀 Key Technical Features
+* **Predictive Maintenance (PdM) Engine:** The system features a custom `PdmService` that utilizes **SciPy Linear Regression** to monitor real-time thermal drift and forecast tool failure.
 * **Automated Safety Interlock:** Backend logic detects process excursions (e.g. temperature > 188.0°C) and triggers an immediate "Machine Stop."
+* **Real-time Connectivity Management:** Frontend implements computed watchers to monitor data "freshness," UI automatically toggles between **Online** and **Offline** states based on telemetry ingestion frequency, and backend freshness checks ensure prognostic widgets clear automatically when a tool shuts down, preventing "stale" alerts.
 * **Hybrid Data Traceability:** Dashboard displays live telemetry (InfluxDB) alongside permanent quarantine records (PostgreSQL).
 * **Modular Design:** Frontend architecture uses Single File Components (SFCs) for separate concerns: `TelemetryStream.vue` and `QuarantineTable.vue`.
+
+### 🔬 Technical Deep Dive: RUL Calculation
+The `PdmService` calculates the **Remaining Useful Life (RUL)** by analyzing the last 30 telemetry points.
+
+1.  **Normalization:** Time series data is converted into seconds elapsed from the start of the sampling window ($x_{rel}$).
+2.  **Regression:** Using `scipy.stats.linregress`, we solve for $y = mx + b$, where $m$ is the drift rate (slope).
+3.  **Stability Filter:** Slopes below $0.005$ °C/s are ignored to prevent noise-driven false positives.
+4.  **Forecasting:** The time to failure is calculated as:
+    $$RUL = \frac{Threshold - CurrentValue}{m}$$
 
 
 ## 📈 Future Roadmap
 * [ ] **OEE Analytics:** Real-time Availability, Performance, and Quality tracking.
-* [ ] **Predictive Maintenance:** Machine learning models to predict tool failure based on sensor drift.
 * [ ] **3D Twin Integration:** Integrating Three.js to visualize the physical tool state in 3D.
 
 
