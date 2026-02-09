@@ -57,12 +57,12 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
     # TERMINAL 2: Launch Control Room (Frontend Dashboard)
     cd frontend
     npm install
-    npm start
+    npm run dev
     ```
 3. **Access Points:**
     * **Interactive API Documentation:** `http://localhost:8000/docs`
     * **InfluxDB Dashboard:** `http://localhost:8086` (Default: `admin`/`password123`)
-    * **View HUD (Dashboard):** `http://localhost:3000`
+    * **View HUD (Dashboard):** `http://localhost:5173/`
 
 ## 📈 Future Roadmap
 * [ ] **The "OEE" Dashboard:** Real-time calculation of Availability, Performance, and Quality metrics to track tool efficiency.
@@ -74,4 +74,4 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 
 **Sky H. Yoo** 📧 [yooskyh@gmail.com](mailto:yooskyh@gmail.com)
 
-I’m a developer passionate about resilient and scalable solutions and modern software stacks. If you have questions about this architecture or want to discuss how we can modernize software workflows, feel free to reach out—I'm always happy to chat and learn something new!
+I’m a developer passionate about resilient and scalable solutions and modern software stacks. If you have questions about this architecture or want to discuss how we can optimize software workflows, feel free to reach out—I'm always happy to chat and learn something new!
