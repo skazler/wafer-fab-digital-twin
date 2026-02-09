@@ -54,7 +54,7 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
     npm run dev
     ```
 
-### What You'll See
+### 📸 What You'll See
 
 <p align="center">
   <img src="./docs/assets/frontendChart.png" width="900" alt="Dashboard Preview">
