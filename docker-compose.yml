@@ -25,7 +25,7 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
     volumes:
-      - influxdb_data:/var/lib/influxdb2 # Mount the volume so data persists!
+      - influxdb_data:/var/lib/influxdb2
     networks:
       - greenfield_net
     healthcheck:
