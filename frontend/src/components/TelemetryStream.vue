@@ -1,87 +1,148 @@
 <script setup>
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import Chart from 'primevue/chart';
 import Card from 'primevue/card';
-import { ref, onMounted } from 'vue';
+import SelectButton from 'primevue/selectbutton';
+import { TelemetryService } from '../services/api';
 
 const chartData = ref(null);
+const rawHistory = ref([]);
+const toggleOptions = ref(['Temperature', 'Threshold']);
+const activeSeries = ref(['Temperature', 'Threshold']);
+let pollInterval = null;
+
+watch(activeSeries, () => {
+    renderChart();
+});
+
+const currentTemp = computed(() => {
+    if (!rawHistory.value.length) return '--';
+    return rawHistory.value[rawHistory.value.length - 1].value.toFixed(1);
+});
+
 const chartOptions = ref({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: {
-            labels: { color: '#ffffff' }
-        }
+        legend: { display: false }
     },
     scales: {
         x: {
-            ticks: { color: '#9ca3af' },
-            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+            ticks: { color: '#9ca3af', maxRotation: 0 },
+            grid: { color: 'rgba(255, 255, 255, 0.05)' }
         },
         y: {
-            min: 150,
-            max: 200,
+            min: 150, max: 200,
             ticks: { color: '#9ca3af' },
-            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-            title: { display: true, text: 'Temperature (°C)', color: '#9ca3af' }
+            grid: { color: 'rgba(255, 255, 255, 0.05)' }
         }
     },
-    animation: { duration: 500 }
+    animation: false,
+    hover: { mode: null }
 });
 
-const updateChart = async () => {
+const fetchData = async () => {
     try {
-        const response = await fetch(`http://localhost:8000/api/v1/history`);
-        const data = await response.json();
+        const data = await TelemetryService.getHistory();
         const history = data.history || [];
-        const tempData = history.filter(h => h.metric === 'temperature');
-
-        chartData.value = {
-            labels: tempData.map(h => new Date(h.time).toLocaleTimeString()),
-            datasets: [
-                {
-                    label: 'Chamber Temperature',
-                    data: tempData.map(h => h.value),
-                    fill: false,
-                    borderColor: '#3B82F6',
-                    tension: 0.4,
-                    pointRadius: 2
-                },
-                {
-                    label: 'Safety Threshold (188°C)',
-                    data: tempData.map(() => 188),
-                    borderColor: '#EF4444',
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 0
-                }
-            ]
-        };
+        rawHistory.value = history.filter(h => h.metric === 'temperature').slice(-30);
+        renderChart();
     } catch (error) {
-        console.error("Failed to fetch telemetry from InfluxDB:", error);
+        console.error("Telemetry Stream Error:", error);
     }
 };
 
+const renderChart = () => {
+    const datasets = [];
+
+    if (activeSeries.value.includes('Temperature')) {
+        datasets.push({
+            label: 'Chamber Temperature',
+            data: rawHistory.value.map(h => h.value),
+            borderColor: '#3B82F6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            fill: true,
+            tension: 0.2,
+            pointRadius: 0
+        });
+    }
+
+    if (activeSeries.value.includes('Threshold')) {
+        datasets.push({
+            label: 'Safety Threshold',
+            data: rawHistory.value.map(() => 188),
+            borderColor: '#EF4444',
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0
+        });
+    }
+
+    chartData.value = {
+        labels: rawHistory.value.map(h => 
+            new Date(h.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        ),
+        datasets: datasets
+    };
+};
+
 onMounted(() => {
-    updateChart();
-    setInterval(updateChart, 3000);
+    fetchData();
+    pollInterval = setInterval(fetchData, 3000);
+});
+
+onUnmounted(() => {
+    if (pollInterval) {
+        clearInterval(pollInterval);
+    }
 });
 </script>
 
 <template>
-    <Card>
+    <Card class="telemetry-card shadow-4">
         <template #title>
-            <div class="flex align-items-center gap-2">
-                <i class="pi pi-chart-line text-blue-400"></i>
-                <span>Live Telemetry (InfluxDB Stream)</span>
+            <div class="flex justify-content-between align-items-center">
+                <div class="flex align-items-center gap-2">
+                    <i class="pi pi-bolt text-yellow-400"></i>
+                    <span class="text-gray-100">Live Telemetry</span>
+                </div>
+                <div class="text-2xl font-mono text-blue-400">
+                    {{ currentTemp }}<span class="text-sm text-gray-500 ml-1">°C</span>
+                </div>
             </div>
         </template>
+        
         <template #content>
-            <div style="height: 350px;">
-                <Chart v-if="chartData" type="line" :data="chartData" :options="chartOptions" class="h-full" />
-                <div v-else class="h-full flex align-items-center justify-content-center border-round bg-gray-800 border-dashed border-1 border-gray-600">
-                    <p class="text-gray-500">Connecting to InfluxDB...</p>
+            <div class="flex justify-content-center mb-4">
+                <SelectButton 
+                    v-model="activeSeries" 
+                    :options="toggleOptions" 
+                    multiple 
+                    aria-label="Toggle Telemetry Series"
+                />
+            </div>
+
+            <div class="chart-container" style="height: 300px; position: relative;">
+                <Chart v-if="chartData" type="line" :data="chartData" :options="chartOptions" class="h-full w-full" />
+                
+                <div v-else class="h-full flex flex-column align-items-center justify-content-center border-round bg-gray-800-opacity">
+                    <i class="pi pi-spin pi-spinner text-3xl mb-2 text-blue-500"></i>
+                    <p class="text-gray-500 font-italic">Synchronizing with InfluxDB...</p>
                 </div>
             </div>
         </template>
     </Card>
 </template>
+
+<style scoped>
+:deep(.p-selectbutton .p-button.p-highlight) {
+    background: #3B82F6;
+    border-color: #3B82F6;
+    color: #ffffff;
+}
+
+.telemetry-card {
+    background: rgba(31, 41, 55, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+</style>
