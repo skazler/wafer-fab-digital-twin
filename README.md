@@ -57,7 +57,7 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 ### What You'll See
 
 <p align="center">
-  <img src="./docs/assets/frontendWIP.png" width="900" alt="Dashboard Preview">
+  <img src="./docs/assets/frontendChart.png" width="900" alt="Dashboard Preview">
   <br>
   <em>Figure 1: Real-time Control Room HUD built with Vue 3 and PrimeVue.</em>
 </p>
