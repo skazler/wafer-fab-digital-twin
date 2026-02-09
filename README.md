@@ -57,27 +57,34 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 ### 📸 What You'll See
 
 <p align="center">
-  <img src="./docs/assets/frontendChart.png" width="900" alt="Dashboard Preview">
+  <img src="./docs/assets/driftDetection.png" width="900" alt="Drift Detection">
   <br>
-  <em>Figure 1: Real-time Control Room HUD built with Vue 3 and PrimeVue.</em>
+  <em>Figure 1: Real-time drift detection that triggers tool shutdown.</em>
+</p>
+
+
+<p align="center">
+  <img src="./docs/assets/dashboardAfterShutdown.png" width="900" alt="Dashboard After Shutdown">
+  <br>
+  <em>Figure 2: Problematic wafer added to quarantine.</em>
 </p>
 
 <p align="center">
   <img src="./docs/assets/backendWIP.png" width="900" alt="Fab Sim Preview">
   <br>
-  <em>Figure 2: Wafer Fab Simulation.</em>
+  <em>Figure 3: Wafer Fab Simulation.</em>
 </p>
 
 <p align="center">
   <img src="./docs/assets/influxDbWIP.png" width="900" alt="Telemetry schema Preview">
   <br>
-  <em>Figure 3: Example telemetry schema.</em>
+  <em>Figure 4: Example telemetry schema.</em>
 </p>
 
 <p align="center">
   <img src="./docs/assets/swaggerWIP.png" width="900" alt="API Calls">
   <br>
-  <em>Figure 4: Example API calls.</em>
+  <em>Figure 5: Example API calls.</em>
 </p>
 
 
