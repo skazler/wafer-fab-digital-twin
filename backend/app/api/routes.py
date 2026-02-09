@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.models import QuarantineLog
 from app.schemas.schemas import TelemetryData, MetricType
 from app.services.spc_service import SPCService
+from app.services.pdm_service import PdmService
 from app.database import (
     save_to_influx,
     get_influx_history,
@@ -30,20 +31,50 @@ async def receive_telemetry(
 
     save_to_influx(data)
 
+    # calculate Predictive Maintenance (PdM) Metrics
+    raw_history = get_influx_history(limit=30)
+    tool_history = [
+        {"time": h["time"], "value": h["value"]}
+        for h in raw_history
+        if h["tool_id"] == data.tool_id and h["metric"] == MetricType.TEMPERATURE.value
+    ]
+    rul_seconds = PdmService.predict_remaining_life(tool_history)
+
     print(
-        f"Processed: {data.tool_id} | Wafer: {data.wafer_id} | Interlock: {interlock_triggered}"
+        f"Processed: {data.tool_id} | Wafer: {data.wafer_id} | "
+        f"Interlock: {interlock_triggered} | RUL: {rul_seconds if rul_seconds else 'Stable'}"
     )
 
     return {
         "status": "processed",
         "wafer_id": data.wafer_id,
         "interlock_active": interlock_triggered,
+        "predictions": {
+            "remaining_life_seconds": rul_seconds,
+            "is_drifting": rul_seconds is not None,
+        },
     }
 
 
 @router.get("/history")
 async def read_history():
-    return {"history": get_influx_history()}
+    history = get_influx_history()
+
+    latest_history = [h for h in history if h["metric"] == MetricType.TEMPERATURE.value]
+
+    prediction = (
+        PdmService.predict_remaining_life(latest_history[-30:])
+        if latest_history
+        else None
+    )
+
+    return {
+        "history": history,
+        "predictions": {
+            "remaining_life_seconds": prediction,
+            "is_drifting": prediction is not None,
+        },
+    }
 
 
 @router.get("/quarantine")

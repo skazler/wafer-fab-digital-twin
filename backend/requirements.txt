@@ -1,9 +1,11 @@
 fastapi
 influxdb-client
+numpy
 polars
 psycopg2-binary
 pydantic
 pydantic-settings
 python-dotenv
+scipy
 sqlalchemy
 uvicorn
