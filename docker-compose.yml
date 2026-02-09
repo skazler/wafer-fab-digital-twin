@@ -3,9 +3,9 @@ services:
     image: postgres:15
     container_name: greenfield_sql
     environment:
-      - POSTGRES_USER=admin
-      - POSTGRES_PASSWORD=password123
-      - POSTGRES_DB=fab_metadata
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -19,11 +19,13 @@ services:
       - "8086:8086"
     environment:
       - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=password123
-      - DOCKER_INFLUXDB_INIT_ORG=greenfield_inc
-      - DOCKER_INFLUXDB_INIT_BUCKET=wafer_telemetry
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-super-secret-admin-token-123
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USER}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_TOKEN}
+    volumes:
+      - influxdb_data:/var/lib/influxdb2 # Mount the volume so data persists!
     networks:
       - greenfield_net
     healthcheck:
@@ -38,17 +40,20 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      influx_db:  # MATCH the service name above
+      influx_db:
         condition: service_healthy
-      postgres_db: # Also wait for Postgres
+      postgres_db:
         condition: service_started
     environment:
-      - INFLUXDB_URL=http://influx_db:8086 # MATCH the service name
-      - INFLUXDB_TOKEN=my-super-secret-admin-token-123
-      - INFLUXDB_ORG=greenfield_inc
-      - INFLUXDB_BUCKET=wafer_telemetry
-      # Add the SQL connection string for SQLAlchemy
-      - DATABASE_URL=postgresql://admin:password123@postgres_db:5432/fab_metadata
+      - INFLUXDB_URL=${INFLUXDB_URL}
+      - INFLUXDB_TOKEN=${INFLUXDB_TOKEN}
+      - INFLUXDB_ORG=${INFLUXDB_ORG}
+      - INFLUXDB_BUCKET=${INFLUXDB_BUCKET}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_DB=${POSTGRES_DB}
     networks:
       - greenfield_net
 
@@ -58,7 +63,7 @@ services:
     depends_on:
       - backend
     environment:
-      - API_URL=http://backend:8000/api/v1/telemetry
+      - API_URL=${API_URL}
     networks:
       - greenfield_net
 
