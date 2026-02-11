@@ -107,8 +107,13 @@ The `PdmService` calculates the **Remaining Useful Life (RUL)** by analyzing the
 
 
 ## 📈 Future Roadmap
-* [ ] **OEE Analytics:** Real-time Availability, Performance, and Quality tracking.
-* [ ] **3D Twin Integration:** Integrating Three.js to visualize the physical tool state in 3D.
+
+* [ ] **Fast Learning Adaptive Thresholds:** Implementing Exponential Moving Averages (EMA) to allow the PdM engine to "learn" process baselines dynamically across different recipe profiles.
+* [ ] **Root Cause Analysis (RCA) Engine:** Expanding the telemetry schema to include multi-variate correlation (e.g., Coolant Pressure vs. Chamber Temp) to automatically identify the source of excursions.
+* [ ] **Automated Countermeasures (Closed-Loop Control):** Developing a feedback mechanism where the backend can issue "Throttle" commands to the simulator to mitigate drift before a safety interlock is triggered.
+* [ ] **Explainable AI (XAI) Dashboarding:** Enhancing prognostic alerts with "Reasoning" strings that detail the statistical confidence and specific sensor correlations driving the failure prediction.
+* [ ] **OEE Analytics:** Real-time Availability, Performance, and Quality tracking to benchmark tool productivity.
+* [ ] **3D Twin Integration:** Integrating Three.js to visualize the physical tool state and sensor heatmaps in a 3D environment.
 
 
 ## 👋 Contact & Connect
