@@ -11,5 +11,15 @@ export const TelemetryService = {
         const response = await fetch(`${BASE_URL}/quarantine`);
         if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
+    },
+
+    async resetSystem() {
+        const response = await fetch(`${API_URL}/system/reset`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to reset system');
+        }
+        return response.json();
     }
 };

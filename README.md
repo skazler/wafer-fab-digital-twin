@@ -22,13 +22,29 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 ### 🛠️ Tech Stack
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Frontend** | Vue 3 + PrimeVue 4 | HUD & Real-time Charts |
-| **API Framework** | FastAPI (Python 3.11) | Async logic |
-| **PdM Engine** | SciPy (Linear Regression) | Predictive drift analysis |
-| **Time-Series DB** | InfluxDB 2.7 (Flux) | Fast sensor telemetry |
-| **Relational DB** | PostgreSQL 15 | Persistent audit & state management |
-| **Containerization**| Docker & Docker Compose | Environment parity & orchestration |
+| **Frontend** | Vue 3 + PrimeVue 4 | HUD with intelligent loading & interlock logic |
+| **API Framework** | FastAPI (Python 3.11) | Async orchestration |
+| **Analysis Engine** | SciPy (LinReg) | Predictive drift & RCA diagnostics |
+| **Time-Series DB** | InfluxDB 2.7 (Flux) | High-frequency sensor telemetry |
+| **Relational DB** | PostgreSQL 15 | Persistent interlock logging & audit trail |
 
+## 🚀 Key Technical Features
+
+### 🧠 Intelligent PdM Engine
+Beyond simple thresholds, the `SmartAnalysisService` utilizes **SciPy Linear Regression** and **Fast Learning adaptive filters** to monitor real-time thermal drift and forecast tool failure.
+
+### 🔍 Root Cause Analysis (RCA) Engine
+The system cross-references sensor correlations to automatically identify the source of excursions. 
+* **Example:** If temperature rises while gas flow decreases, the system flags a `GAS_LEAK_DETECTION` rather than a generic heater error.
+
+### 🛡️ Automated Safety Interlocks & State Recovery
+* **Persistent Interlock:** Backend logic detects process excursions (e.g., $>188.0$ °C) and triggers an immediate "Machine Stop."
+* **`wasInterlocked` Logic:** The UI implements a persistent state lock. If a tool crashes, the dashboard remains in a "Critical" state even if the data stream stops, preventing "stale" or "nominal" reports during a hardware failure.
+* **Reset Loop:** A secure `POST /system/reset` endpoint allows operators to clear the interlock state and resume the simulation once the fault is mitigated.
+
+### 📡 High-Fidelity Connectivity Management
+* **Real-time Heartbeat:** Frontend monitors data "freshness" using computed watchers to toggle between **Online** and **Offline** states.
+* **Inferred Shutdown:** The UI intelligently detects tool crashes even if the network packet stream cuts out mid-excursion by analyzing the last known Remaining Useful Life (RUL).
 
 ## 🚦 Getting Started
 
@@ -58,58 +74,29 @@ This repository contains a **Digital Twin Prototype** designed to model a wafer 
 ### 📸 What You'll See
 
 <p align="center">
-  <img src="./docs/assets/driftDetection.png" width="900" alt="Drift Detection">
+  <img src="./docs/assets/thermalDriftDetected.png" width="900" alt="Drift Detection">
   <br>
-  <em>Figure 1: Real-time drift detection that triggers tool shutdown.</em>
-</p>
-
-
-<p align="center">
-  <img src="./docs/assets/dashboardAfterShutdown.png" width="900" alt="Dashboard After Shutdown">
-  <br>
-  <em>Figure 2: Problematic wafer added to quarantine.</em>
+  <em>Figure 1: Real-time drift detection that provides corrective recommendations and automated countermeasures.</em>
 </p>
 
 <p align="center">
   <img src="./docs/assets/backendWIP.png" width="900" alt="Fab Sim Preview">
   <br>
-  <em>Figure 3: Wafer Fab Simulation.</em>
-</p>
-
-<p align="center">
-  <img src="./docs/assets/influxDbWIP.png" width="900" alt="Telemetry schema Preview">
-  <br>
-  <em>Figure 4: Example telemetry schema.</em>
-</p>
-
-<p align="center">
-  <img src="./docs/assets/swaggerWIP.png" width="900" alt="API Calls">
-  <br>
-  <em>Figure 5: Example API calls.</em>
+  <em>Figure 2: Wafer Fab Simulation.</em>
 </p>
 
 
-## 🚀 Key Technical Features
-* **Predictive Maintenance (PdM) Engine:** The system features a custom `PdmService` that utilizes **SciPy Linear Regression** to monitor real-time thermal drift and forecast tool failure.
-* **Automated Safety Interlock:** Backend logic detects process excursions (e.g. temperature > 188.0°C) and triggers an immediate "Machine Stop."
-* **Real-time Connectivity Management:** Frontend implements computed watchers to monitor data "freshness," UI automatically toggles between **Online** and **Offline** states based on telemetry ingestion frequency, and backend freshness checks ensure prognostic widgets clear automatically when a tool shuts down, preventing "stale" alerts.
-* **Hybrid Data Traceability:** Dashboard displays live telemetry (InfluxDB) alongside permanent quarantine records (PostgreSQL).
-* **Modular Design:** Frontend architecture uses Single File Components (SFCs) for separate concerns: `TelemetryStream.vue` and `QuarantineTable.vue`.
+## 🔬 Technical Deep Dive
 
-### 🔬 Technical Deep Dive: RUL Calculation
-The `PdmService` calculates the **Remaining Useful Life (RUL)** by analyzing the last 30 telemetry points.
+### RUL & Diagnostic Logic
+The `SmartAnalysisService` calculates the **Remaining Useful Life (RUL)** and determines the countermeasure strategy:
 
-1.  **Normalization:** Time series data is converted into seconds elapsed from the start of the sampling window ($x_{rel}$).
-2.  **Regression:** Using `scipy.stats.linregress`, we solve for $y = mx + b$, where $m$ is the drift rate (slope).
-3.  **Stability Filter:** Slopes below $0.005$ °C/s are ignored to prevent noise-driven false positives.
-4.  **Forecasting:** The time to failure is calculated as:
-    $$RUL = \frac{Threshold - CurrentValue}{m}$$
-
+1.  **Regression:** We solve for $y = mx + b$ using the latest 30-point window.
+2.  **Forecasting:** $$RUL = \frac{\text{Safety Threshold} - \text{Current Value}}{m}$$
+3.  **UI Feedback:** A dynamic progress bar provides a visual "Glow" effect when $RUL < 60s$ to signal immediate operator intervention.
 
 ## 📈 Future Roadmap
 
-* [ ] **Fast Learning Adaptive Thresholds:** Implementing Exponential Moving Averages (EMA) to allow the PdM engine to "learn" process baselines dynamically across different recipe profiles.
-* [ ] **Root Cause Analysis (RCA) Engine:** Expanding the telemetry schema to include multi-variate correlation (e.g., Coolant Pressure vs. Chamber Temp) to automatically identify the source of excursions.
 * [ ] **Automated Countermeasures (Closed-Loop Control):** Developing a feedback mechanism where the backend can issue "Throttle" commands to the simulator to mitigate drift before a safety interlock is triggered.
 * [ ] **Explainable AI (XAI) Dashboarding:** Enhancing prognostic alerts with "Reasoning" strings that detail the statistical confidence and specific sensor correlations driving the failure prediction.
 * [ ] **OEE Analytics:** Real-time Availability, Performance, and Quality tracking to benchmark tool productivity.
