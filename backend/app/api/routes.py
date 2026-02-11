@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from typing import List, Dict
 
 from app.models.models import QuarantineLog
@@ -29,12 +30,23 @@ router = APIRouter()
 # --- Routes --- #
 
 
+@router.get("/health")
+async def health_check(pg_db: Session = Depends(get_postgres_db)):
+    """Checks if the backend can connect to the database."""
+    try:
+        pg_db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "database": "disconnected", "error": str(e)}
+
+
 @router.post("/telemetry")
 async def receive_telemetry(
     data: TelemetryData, pg_db: Session = Depends(get_postgres_db)
 ):
     # immediate safety check
     temp = data.metrics.get(MetricType.TEMPERATURE, 0)
+
     interlock_active = temp > 188.0
     if interlock_active:
         trigger_safety_interlock(data, pg_db)
@@ -161,30 +173,9 @@ async def reset_system(pg_db: Session = Depends(get_postgres_db)):
 
 
 def trigger_safety_interlock(data: TelemetryData, pg_db: Session):
-    # Prevent duplicate logging: check if this wafer/tool is already in quarantine
-    existing_interlock = (
-        pg_db.query(QuarantineLog)
-        .filter(
-            QuarantineLog.tool_id == data.tool_id,
-            QuarantineLog.wafer_id == data.wafer_id,
-        )
-        .first()
-    )
-    if existing_interlock:
-        return
-
     temp = data.metrics.get(MetricType.TEMPERATURE, 0)
-    new_quarantine = QuarantineLog(
-        wafer_id=data.wafer_id,
-        tool_id=data.tool_id,
-        metric_name=MetricType.TEMPERATURE.value,
-        violation_value=temp,
-        threshold_limit=188.0,
-    )
-    pg_db.add(new_quarantine)
-    pg_db.commit()
-    print(f"!!! SAFETY INTERLOCK LOGGED: {data.wafer_id} !!!")
 
+    # 1. Log to file FIRST (Critical Safety Path - works even if DB is down)
     SafetyLogService.log_shutdown(
         tool_id=data.tool_id,
         wafer_id=data.wafer_id,
@@ -192,3 +183,29 @@ def trigger_safety_interlock(data: TelemetryData, pg_db: Session):
         value=temp,
         threshold=188.0,
     )
+
+    # 2. Attempt Database Log (Wrapped in try/except to handle connection resets)
+    try:
+        existing_interlock = (
+            pg_db.query(QuarantineLog)
+            .filter(
+                QuarantineLog.tool_id == data.tool_id,
+                QuarantineLog.wafer_id == data.wafer_id,
+            )
+            .first()
+        )
+
+        if not existing_interlock:
+            new_quarantine = QuarantineLog(
+                wafer_id=data.wafer_id,
+                tool_id=data.tool_id,
+                metric_name=MetricType.TEMPERATURE.value,
+                violation_value=temp,
+                threshold_limit=188.0,
+            )
+            pg_db.add(new_quarantine)
+            pg_db.commit()
+            print(f"!!! SAFETY INTERLOCK LOGGED: {data.wafer_id} !!!")
+    except Exception as e:
+        print(f"!!! DB ERROR (Connection Reset?): {e}")
+        pg_db.rollback()
