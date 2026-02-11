@@ -85,6 +85,12 @@ The system cross-references sensor correlations to automatically identify the so
   <em>Figure 2: Wafer Fab Simulation.</em>
 </p>
 
+<p align="center">
+  <img src="./docs/assets/estopTriggered.png" width="900" alt="Fab Sim Preview">
+  <br>
+  <em>Figure 3: Countermeasure automatically triggered by interlock.</em>
+</p>
+
 
 ## 🔬 Technical Deep Dive
 
